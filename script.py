@@ -24,6 +24,12 @@ Place = {
         ]
 }
 
+difficulty = {
+    "Легкий": "легко",
+    "Середній": "середньо",
+    "Складний": "складно"
+}
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     start_message = (
@@ -50,8 +56,39 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def make_idea_message(category=None, difficulty=None):
     if category and category in subjects:
         subject = random.choice(subjects[category])
+
     else:
-        subject = random.choice
+        subject = random.choice([item for sublist in subjects.values() for item in sublist])
     
+    Type = random.choice([item for sublist in Type.values() for item in sublist])
+    Place = random.choice([item for sublist in Place.values() for item in sublist])
 
+    difficulty_text = f" ({difficulty[difficulty]})" if difficulty else ""
 
+    return f"твої 3 слова: {subject} {Type} {Place} {difficulty_text}"
+
+async def categories(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        [InlineKeyboardButton(category, callback_data= f"category_{category}")]
+        for category in subjects.keys() and category in Type.keys():
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text("Оберіть категорію", reply_markup=reply_markup)
+
+async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data.split("_")
+    if data[0] == "category":
+        context.user_data["category"] = data[1]
+        await query.message.reply_text(f"Обрана категорія: {data[1]} \n Використайте команду /make_idea ")
+    elif data[0] == "difficulty":
+        context.user_data["difficulty"] = data[1]
+        await query.message.reply_text(f"Обраний рівень складності: {data[1]} \n Використайте команду /make_idea ")
+
+async def generate(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    category = context.user_data.get("category")
+    difficulty = context.user_data.get("difficulty")
+    art_idea = make_idea_message(category, difficulty)
+    await update.message.reply_text(art_idea)
